@@ -29,26 +29,27 @@ Tensorflow implementation of [Deep Convolutional Generative Adversarial Networks
 
 First, download dataset with:
 
-    $ python download.py mnist celebA
+    $ python download.py mnist
+    $ python download.py celebA
 
 To train a model with downloaded dataset:
 
-    $ python main.py --dataset mnist --input_height=28 --output_height=28 --train
-    $ python main.py --dataset celebA --input_height=108 --train --crop
+    $ python main.py --dataset mnist --input_height=28 --output_height=28 --c_dim=1 --is_train
+    $ python main.py --dataset celebA --input_height=108 --is_train --is_crop True
 
 To test with an existing model:
 
-    $ python main.py --dataset mnist --input_height=28 --output_height=28
-    $ python main.py --dataset celebA --input_height=108 --crop
+    $ python main.py --dataset mnist --input_height=28 --output_height=28 --c_dim=1
+    $ python main.py --dataset celebA --input_height=108 --is_crop True
 
 Or, you can use your own dataset (without central crop) by:
 
     $ mkdir data/DATASET_NAME
     ... add images to data/DATASET_NAME ...
-    $ python main.py --dataset DATASET_NAME --train
+    $ python main.py --dataset DATASET_NAME --is_train
     $ python main.py --dataset DATASET_NAME
     $ # example
-    $ python main.py --dataset=eyes --input_fname_pattern="*_cropped.png" --train
+    $ python main.py --dataset=eyes --input_fname_pattern="*_cropped.png" --c_dim=1 --is_train
 
 ## Results
 
@@ -62,7 +63,7 @@ After 6th epoch:
 
 After 10th epoch:
 
-![result4](assets/test_2016-01-27%2015:08:54.png)
+![result4](assets/test_2016-01-27 15:08:54.png)
 
 ### Asian face dataset
 
@@ -98,13 +99,6 @@ Details of the histogram of true and fake result of discriminator (with custom d
 ![d_hist](assets/d_hist.png)
 
 ![d__hist](assets/d__hist.png)
-
-
-## Related works
-
-- [BEGAN-tensorflow](https://github.com/carpedm20/BEGAN-tensorflow)
-- [DiscoGAN-pytorch](https://github.com/carpedm20/DiscoGAN-pytorch)
-- [simulated-unsupervised-tensorflow](https://github.com/carpedm20/simulated-unsupervised-tensorflow)
 
 
 ## Author

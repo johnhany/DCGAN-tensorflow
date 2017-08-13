@@ -24,16 +24,16 @@ def show_all_variables():
 
 def get_image(image_path, input_height, input_width,
               resize_height=64, resize_width=64,
-              crop=True, grayscale=False):
-  image = imread(image_path, grayscale)
+              is_crop=True, is_grayscale=False):
+  image = imread(image_path, is_grayscale)
   return transform(image, input_height, input_width,
-                   resize_height, resize_width, crop)
+                   resize_height, resize_width, is_crop)
 
 def save_images(images, size, image_path):
   return imsave(inverse_transform(images), size, image_path)
 
-def imread(path, grayscale = False):
-  if (grayscale):
+def imread(path, is_grayscale = False):
+  if (is_grayscale):
     return scipy.misc.imread(path, flatten = True).astype(np.float)
   else:
     return scipy.misc.imread(path).astype(np.float)
@@ -43,28 +43,15 @@ def merge_images(images, size):
 
 def merge(images, size):
   h, w = images.shape[1], images.shape[2]
-  if (images.shape[3] in (3,4)):
-    c = images.shape[3]
-    img = np.zeros((h * size[0], w * size[1], c))
-    for idx, image in enumerate(images):
-      i = idx % size[1]
-      j = idx // size[1]
-      img[j * h:j * h + h, i * w:i * w + w, :] = image
-    return img
-  elif images.shape[3]==1:
-    img = np.zeros((h * size[0], w * size[1]))
-    for idx, image in enumerate(images):
-      i = idx % size[1]
-      j = idx // size[1]
-      img[j * h:j * h + h, i * w:i * w + w] = image[:,:,0]
-    return img
-  else:
-    raise ValueError('in merge(images,size) images parameter '
-                     'must have dimensions: HxW or HxWx3 or HxWx4')
+  img = np.zeros((h * size[0], w * size[1], 3))
+  for idx, image in enumerate(images):
+    i = idx % size[1]
+    j = idx // size[1]
+    img[j*h:j*h+h, i*w:i*w+w, :] = image
+  return img
 
 def imsave(images, size, path):
-  image = np.squeeze(merge(images, size))
-  return scipy.misc.imsave(path, image)
+  return scipy.misc.imsave(path, merge(images, size))
 
 def center_crop(x, crop_h, crop_w,
                 resize_h=64, resize_w=64):
@@ -77,8 +64,8 @@ def center_crop(x, crop_h, crop_w,
       x[j:j+crop_h, i:i+crop_w], [resize_h, resize_w])
 
 def transform(image, input_height, input_width, 
-              resize_height=64, resize_width=64, crop=True):
-  if crop:
+              resize_height=64, resize_width=64, is_crop=True):
+  if is_crop:
     cropped_image = center_crop(
       image, input_height, input_width, 
       resize_height, resize_width)
@@ -172,9 +159,23 @@ def make_gif(images, fname, duration=2, true_image=False):
 def visualize(sess, dcgan, config, option):
   image_frame_dim = int(math.ceil(config.batch_size**.5))
   if option == 0:
-    z_sample = np.random.uniform(-0.5, 0.5, size=(config.batch_size, dcgan.z_dim))
-    samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
-    save_images(samples, [image_frame_dim, image_frame_dim], './samples/test_%s.png' % strftime("%Y%m%d%H%M%S", gmtime()))
+    z_sample = np.zeros(shape=(config.batch_size, dcgan.z_dim))
+    with open('sample_file.txt') as f:
+      array = [[float(x) for x in line.split()] for line in f]
+      for row in range(config.batch_size):
+        for col in range(dcgan.z_dim):
+          z_sample[row, col] = array[row][col]
+    
+    #z_sample = np.random.uniform(-1.0, 1.0, size=(config.batch_size, dcgan.z_dim))
+    if config.dataset == "mnist":
+        y = np.random.choice(10, config.batch_size)
+        y_one_hot = np.zeros((config.batch_size, 10))
+        y_one_hot[np.arange(config.batch_size), y] = 1
+
+        samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample, dcgan.y: y_one_hot})
+    else:
+        samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
+    save_images(samples, [image_frame_dim, image_frame_dim], './samples/test_%s.png' % strftime("%Y-%m-%d-%H-%M-%S", gmtime()))
   elif option == 1:
     values = np.arange(0, 1, 1./config.batch_size)
     for idx in xrange(100):
@@ -215,7 +216,7 @@ def visualize(sess, dcgan, config, option):
       try:
         make_gif(samples, './samples/test_gif_%s.gif' % (idx))
       except:
-        save_images(samples, [image_frame_dim, image_frame_dim], './samples/test_%s.png' % strftime("%Y%m%d%H%M%S", gmtime()))
+        save_images(samples, [image_frame_dim, image_frame_dim], './samples/test_%s.png' % strftime("%Y-%m-%d-%H-%M-%S", gmtime()))
   elif option == 3:
     values = np.arange(0, 1, 1./config.batch_size)
     for idx in xrange(100):
@@ -241,10 +242,5 @@ def visualize(sess, dcgan, config, option):
     new_image_set = [merge(np.array([images[idx] for images in image_set]), [10, 10]) \
         for idx in range(64) + range(63, -1, -1)]
     make_gif(new_image_set, './samples/test_gif_merged.gif', duration=8)
-
-
-def image_manifold_size(num_images):
-  manifold_h = int(np.floor(np.sqrt(num_images)))
-  manifold_w = int(np.ceil(np.sqrt(num_images)))
-  assert manifold_h * manifold_w == num_images
-  return manifold_h, manifold_w
+  else:
+    raise Exception("[!] Flag `visualize` must be one of [None, 0, 1, 2, 3, 4]")

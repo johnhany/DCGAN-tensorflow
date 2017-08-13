@@ -17,13 +17,14 @@ flags.DEFINE_integer("input_height", 108, "The size of image to use (will be cen
 flags.DEFINE_integer("input_width", None, "The size of image to use (will be center cropped). If None, same value as input_height [None]")
 flags.DEFINE_integer("output_height", 64, "The size of the output images to produce [64]")
 flags.DEFINE_integer("output_width", None, "The size of the output images to produce. If None, same value as output_height [None]")
+flags.DEFINE_integer("c_dim", 3, "Dimension of image color. [3]")
 flags.DEFINE_string("dataset", "celebA", "The name of dataset [celebA, mnist, lsun]")
 flags.DEFINE_string("input_fname_pattern", "*.jpg", "Glob pattern of filename of input images [*]")
 flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
 flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
-flags.DEFINE_boolean("train", False, "True for training, False for testing [False]")
-flags.DEFINE_boolean("crop", False, "True for training, False for testing [False]")
-flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
+flags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")
+flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
+flags.DEFINE_integer("visualize", None, "0-4 for visualizing, None for nothing [None]")
 FLAGS = flags.FLAGS
 
 def main(_):
@@ -54,9 +55,10 @@ def main(_):
           batch_size=FLAGS.batch_size,
           sample_num=FLAGS.batch_size,
           y_dim=10,
+          c_dim=1,
           dataset_name=FLAGS.dataset,
           input_fname_pattern=FLAGS.input_fname_pattern,
-          crop=FLAGS.crop,
+          is_crop=FLAGS.is_crop,
           checkpoint_dir=FLAGS.checkpoint_dir,
           sample_dir=FLAGS.sample_dir)
     else:
@@ -68,18 +70,18 @@ def main(_):
           output_height=FLAGS.output_height,
           batch_size=FLAGS.batch_size,
           sample_num=FLAGS.batch_size,
+          c_dim=FLAGS.c_dim,
           dataset_name=FLAGS.dataset,
           input_fname_pattern=FLAGS.input_fname_pattern,
-          crop=FLAGS.crop,
+          is_crop=FLAGS.is_crop,
           checkpoint_dir=FLAGS.checkpoint_dir,
           sample_dir=FLAGS.sample_dir)
 
     show_all_variables()
-
-    if FLAGS.train:
+    if FLAGS.is_train:
       dcgan.train(FLAGS)
     else:
-      if not dcgan.load(FLAGS.checkpoint_dir)[0]:
+      if not dcgan.load(FLAGS.checkpoint_dir):
         raise Exception("[!] Train a model first, then run test mode")
       
 
@@ -90,8 +92,8 @@ def main(_):
     #                 [dcgan.h4_w, dcgan.h4_b, None])
 
     # Below is codes for visualization
-    OPTION = 1
-    visualize(sess, dcgan, FLAGS, OPTION)
+    if FLAGS.visualize is not None:
+      visualize(sess, dcgan, FLAGS, FLAGS.visualize)
 
 if __name__ == '__main__':
   tf.app.run()
